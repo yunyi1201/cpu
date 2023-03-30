@@ -17,6 +17,7 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <memory/vaddr.h>
 #include "sdb.h"
 
 static int is_batch_mode = false;
@@ -49,7 +50,68 @@ static int cmd_c(char *args) {
 
 
 static int cmd_q(char *args) {
+  nemu_state.state = NEMU_QUIT;
   return -1;
+}
+
+
+static int cmd_si(char *args) {
+  int step = -1;
+  if (!args) {
+    step = 1;
+  } else {
+    int ret = sscanf(args, "%d", &step);
+    if (ret != 1) {
+      printf("oops, %s format is wrong\n", args);
+      return 0;
+    }
+  }
+  Assert(step > 0, "step: %d should great than 0", step);
+  cpu_exec(step);
+  return 0;
+}
+
+static int cmd_info(char *args) {
+  if (!args) {
+    printf("Usage: info [r/m]\n");
+    return 0;
+  }
+  if (!strcmp(args, "r")) {
+    isa_reg_display();
+    return 0;
+  } 
+
+  // if (!strcmp(args, "m")) {
+  //   printf("Not implement\n");
+  //   return 0;
+  // }
+
+  Assert(0, "Not reconized argument %s", args);
+}
+
+
+static int cmd_x(char *args) {
+  char *end = args + strlen(args);
+  int n;
+  vaddr_t addr;
+  char *s1 = strtok(NULL, " ");
+  if (!s1) {
+    printf("Usage: x [n] [addr]\n");
+    return 0;
+  }   
+
+  char *s2 = s1 + strlen(s1) + 1;
+  if (s2 >= end) {
+    printf("Usage: x [n] [addr]\n");
+    return 0;
+  }
+  sscanf(s1, "%d", &n);
+  sscanf(s2, "%lx",&addr);
+  for (int i = 0; i < n; i++) {
+    word_t value = vaddr_read(addr+i*4, 4);
+    printf("Addr 0x%lx:\t  0x%lx\n", addr+i*4, value);
+  }
+  return 0;
 }
 
 static int cmd_help(char *args);
@@ -62,10 +124,13 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
-  /* TODO: Add more commands */
-
+  { "si", "step exec [n] instructions", cmd_si},
+  { "info", "display registers infomation", cmd_info},
+  { "x", "display memory infomation", cmd_x},
 };
+
+
+
 
 #define NR_CMD ARRLEN(cmd_table)
 
