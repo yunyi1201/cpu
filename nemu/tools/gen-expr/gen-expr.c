@@ -23,6 +23,7 @@
 // this should be enough
 static char buf[65536] = {};
 static char code_buf[65536 + 128] = {}; // a little larger than `buf`
+static char *pbuf;
 static char *code_format =
 "#include <stdio.h>\n"
 "int main() { "
@@ -31,8 +32,51 @@ static char *code_format =
 "  return 0; "
 "}";
 
+
+static inline uint64_t choose(uint64_t max) {
+  return rand() % max;
+}
+
+static inline void gen_rand_op() {
+  char op_lists[] = {'+', '-', '*', '/', '+', '/', '*'};
+  pbuf += sprintf(pbuf, "%c", op_lists[choose(7)]);
+}
+
+
+static inline void gen_num() {
+  pbuf += sprintf(pbuf, "%luUL", (uint64_t)rand());
+}
+
+
+static inline void gen_space() {
+  char *sapce_lists[3] = {
+    "",
+    " ",
+    "  ",
+  };
+  pbuf += sprintf(pbuf, "%s", sapce_lists[choose(3)]);
+}
+
+
 static void gen_rand_expr() {
-  buf[0] = '\0';
+  gen_space();
+  switch (choose(3))
+  {
+    default:
+      gen_rand_expr();
+      gen_space();
+      gen_rand_op();
+      gen_space();
+      gen_rand_expr();
+      break;
+    case 1:
+      gen_num(); break;
+    case 2:
+      pbuf += sprintf(pbuf, "(");
+      gen_rand_expr();
+      pbuf += sprintf(pbuf, ")");
+      break;
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -44,6 +88,7 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
+    pbuf = buf;
     gen_rand_expr();
 
     sprintf(code_buf, code_format, buf);
@@ -60,7 +105,7 @@ int main(int argc, char *argv[]) {
     assert(fp != NULL);
 
     int result;
-    fscanf(fp, "%d", &result);
+    ret = fscanf(fp, "%d", &result);
     pclose(fp);
 
     printf("%u %s\n", result, buf);

@@ -22,6 +22,9 @@
 
 static int is_batch_mode = false;
 
+void watchpoint_display();
+void new_watchpoint(char *e, word_t result);
+void delete_watchpoint(int num);
 void init_regex();
 void init_wp_pool();
 
@@ -81,10 +84,10 @@ static int cmd_info(char *args) {
     return 0;
   } 
 
-  // if (!strcmp(args, "m")) {
-  //   printf("Not implement\n");
-  //   return 0;
-  // }
+  if (!strcmp(args, "w")) {
+    watchpoint_display();
+    return 0;
+  }
 
   Assert(0, "Not reconized argument %s", args);
 }
@@ -115,14 +118,49 @@ static int cmd_x(char *args) {
 }
 
 static int cmp_p(char *args) {
+  if (!args) {
+    printf("Usage: p [expr]\n");
+    return 0;
+  }
   bool success = false;
   word_t value = expr(args, &success);
-
+  
   if (success) {
     printf("eval %s, got %lx\n", args, value);
     return 0;
   }
   printf("eval invalid expression %s\n", args);
+  return 0;
+}
+
+
+static int cmd_w(char *args) {
+  if (!args) {
+    printf("Usage: w [expr]\n");
+    return 0;
+  }
+  bool success = false;
+  word_t result = expr(args, &success);
+  if (!success) {
+    printf("eval an invalid expression %s\n", args);
+    return 0;
+  }
+  new_watchpoint(args, result);
+  return 0;
+}
+
+static int cmd_d(char *args) {
+    if (!args) {
+    printf("Usage: d [num]\n");
+    return 0;
+  }
+  int num = -1;
+  sscanf(args, "%d", &num);
+  if (num == -1) {
+    printf("can't read watchpoint num from %s\n", args);
+    return 0;
+  }
+  delete_watchpoint(num); 
   return 0;
 }
 
@@ -140,6 +178,8 @@ static struct {
   { "info", "display registers infomation", cmd_info},
   { "x", "display memory infomation", cmd_x},
   {"p", "eval expression value", cmp_p},
+  {"w", "set a watchpoint", cmd_w},
+  {"d", "delete an watchpoint", cmd_d},
 };
 
 
