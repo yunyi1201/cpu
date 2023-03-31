@@ -114,6 +114,18 @@ static int cmd_x(char *args) {
   return 0;
 }
 
+static int cmp_p(char *args) {
+  bool success = false;
+  word_t value = expr(args, &success);
+
+  if (success) {
+    printf("eval %s, got %lx\n", args, value);
+    return 0;
+  }
+  printf("eval invalid expression %s\n", args);
+  return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -127,6 +139,7 @@ static struct {
   { "si", "step exec [n] instructions", cmd_si},
   { "info", "display registers infomation", cmd_info},
   { "x", "display memory infomation", cmd_x},
+  {"p", "eval expression value", cmp_p},
 };
 
 
