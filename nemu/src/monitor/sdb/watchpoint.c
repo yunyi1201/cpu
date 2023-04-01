@@ -52,16 +52,9 @@ static WP* new_wp() {
 
 static void free_wp(WP* wp) {
   WP **curr = &head;
-  WP *prev = NULL;
-
   for (; *curr != wp; curr = &(*curr)->next) {
-    prev = *curr;
   }
-  if (!prev) {
-    *curr = (*curr)->next;
-    return ;
-  }
-  prev->next = (*curr)->next;
+  *curr = wp->next;
 }
 
 void watchpoint_display() {
